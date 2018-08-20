@@ -149,6 +149,7 @@ namespace System.IO.Abstractions.TestingHelpers
 
             mockFileDataAccessor.AddFile(path, new MockFileData(new byte[0]));
             var stream = OpenWrite(path);
+
             return stream;
         }
 
@@ -163,10 +164,28 @@ namespace System.IO.Abstractions.TestingHelpers
         }
 
 #if NET40
+
         public override Stream Create(string path, int bufferSize, FileOptions options, FileSecurity fileSecurity)
         {
-            throw new NotImplementedException(StringResources.Manager.GetString("NOT_IMPLEMENTED_EXCEPTION"));
+            if (path == null)
+            {
+                throw new ArgumentNullException(nameof(path), "Path cannot be null.");
+            }
+            mockFileDataAccessor.PathVerifier.IsLegalAbsoluteOrRelative(path, "path");
+
+            var directoryPath = mockPath.GetDirectoryName(path);
+            if (!mockFileDataAccessor.Directory.Exists(directoryPath))
+            {
+                throw new DirectoryNotFoundException(string.Format(CultureInfo.InvariantCulture, StringResources.Manager.GetString("COULD_NOT_FIND_PART_OF_PATH_EXCEPTION"), path));
+            }
+
+            MockFileData mockFileData = new MockFileData(new byte[bufferSize]); // should the buffer size be added here?
+            mockFileDataAccessor.AddFile(path, mockFileData);
+            mockFileData.AccessControl = fileSecurity; // TODO:  should we check whether the fileSecurity object has any FileSystem access rules added to it? otherwise it might not make much sense.
+            var stream = OpenWrite(path);
+            return stream;
         }
+
 #endif
 
         public override StreamWriter CreateText(string path)
@@ -175,13 +194,16 @@ namespace System.IO.Abstractions.TestingHelpers
         }
 
 #if NET40
+
         public override void Decrypt(string path)
         {
             mockFileDataAccessor.PathVerifier.IsLegalAbsoluteOrRelative(path, "path");
 
             new MockFileInfo(mockFileDataAccessor, path).Decrypt();
         }
+
 #endif
+
         public override void Delete(string path)
         {
             mockFileDataAccessor.PathVerifier.IsLegalAbsoluteOrRelative(path, "path");
@@ -190,12 +212,14 @@ namespace System.IO.Abstractions.TestingHelpers
         }
 
 #if NET40
+
         public override void Encrypt(string path)
         {
             mockFileDataAccessor.PathVerifier.IsLegalAbsoluteOrRelative(path, "path");
 
             new MockFileInfo(mockFileDataAccessor, path).Encrypt();
         }
+
 #endif
 
         public override bool Exists(string path)
@@ -350,7 +374,6 @@ namespace System.IO.Abstractions.TestingHelpers
                     throw new IOException("A file can not be created if it already exists.");
                 }
             }
-                
 
             var sourceFile = mockFileDataAccessor.GetFile(sourceFileName);
 
@@ -399,7 +422,7 @@ namespace System.IO.Abstractions.TestingHelpers
             }
 
             var length = mockFileDataAccessor.GetFile(path).Contents.Length;
-            
+
             MockFileStream.StreamType streamType = MockFileStream.StreamType.WRITE;
             if (access == FileAccess.Read)
                 streamType = MockFileStream.StreamType.READ;
@@ -517,6 +540,7 @@ namespace System.IO.Abstractions.TestingHelpers
         }
 
 #if NET40
+
         public override void Replace(string sourceFileName, string destinationFileName, string destinationBackupFileName)
         {
             Replace(sourceFileName, destinationFileName, destinationBackupFileName, false);
@@ -554,6 +578,7 @@ namespace System.IO.Abstractions.TestingHelpers
             mockFile.Delete(destinationFileName);
             mockFile.Move(sourceFileName, destinationFileName);
         }
+
 #endif
 
         public override void SetAccessControl(string path, FileSecurity fileSecurity)
@@ -673,7 +698,7 @@ namespace System.IO.Abstractions.TestingHelpers
             mockFileDataAccessor.AddFile(path, new MockFileData(bytes));
         }
 
-       /// <summary>
+        /// <summary>
         /// Creates a new file, writes a collection of strings to the file, and then closes the file.
         /// </summary>
         /// <param name="path">The file to write to.</param>
@@ -938,7 +963,7 @@ namespace System.IO.Abstractions.TestingHelpers
             }
 
             VerifyDirectoryExists(path);
-     
+
             MockFileData data = contents == null ? new MockFileData(new byte[0]) : new MockFileData(contents, encoding);
             mockFileDataAccessor.AddFile(path, data);
         }

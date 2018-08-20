@@ -5,14 +5,13 @@ namespace System.IO.Abstractions.TestingHelpers.Tests
     using Globalization;
 
     using NUnit.Framework;
-
+    using System.Security.AccessControl;
     using Text;
 
     using XFS = MockUnixSupport;
 
     public class MockFileCreateTests
     {
-
         [Test]
         public void Mockfile_Create_ShouldCreateNewStream()
         {
@@ -89,7 +88,7 @@ namespace System.IO.Abstractions.TestingHelpers.Tests
             mockFile.SetAttributes(path, FileAttributes.ReadOnly);
 
             // Assert
-            var exception =  Assert.Throws<UnauthorizedAccessException>(() => mockFile.Create(path).Dispose());
+            var exception = Assert.Throws<UnauthorizedAccessException>(() => mockFile.Create(path).Dispose());
             Assert.That(exception.Message, Is.EqualTo(string.Format(CultureInfo.InvariantCulture, "Access to the path '{0}' is denied.", path)));
         }
 
@@ -164,6 +163,24 @@ namespace System.IO.Abstractions.TestingHelpers.Tests
             Assert.IsFalse(fileSystem.Directory.Exists("C:\\path"));
             var exception = Assert.Throws<DirectoryNotFoundException>(action);
             Assert.That(exception.Message, Does.StartWith("Could not find a part of the path"));
+        }
+
+        [Test]
+        public void Mockfile_CreateOverload_ShouldCreateNewStream()
+        {
+            string fullPath = XFS.Path(@"c:\something\demo.txt");
+            var fileSystem = new MockFileSystem();
+            fileSystem.AddDirectory(XFS.Path(@"c:\something"));
+            FileSecurity fileSecurity = new FileSecurity();
+            FileOptions fileOption = FileOptions.WriteThrough;
+
+            var mockFile = new MockFile(fileSystem);
+
+            Assert.That(fileSystem.FileExists(fullPath), Is.False);
+
+            mockFile.Create(fullPath, 20, fileOption, fileSecurity).Dispose();
+
+            Assert.That(fileSystem.FileExists(fullPath), Is.True);
         }
     }
 }
