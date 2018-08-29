@@ -166,21 +166,65 @@ namespace System.IO.Abstractions.TestingHelpers.Tests
         }
 
         [Test]
-        public void Mockfile_CreateOverload_ShouldCreateNewStream()
+        public void Mockfile_CreateOverload_CanWriteToNewStream()
         {
             string fullPath = XFS.Path(@"c:\something\demo.txt");
             var fileSystem = new MockFileSystem();
             fileSystem.AddDirectory(XFS.Path(@"c:\something"));
-            FileSecurity fileSecurity = new FileSecurity();
+            var data = new UTF8Encoding(false).GetBytes("Test string");
+
+            var sut = new MockFile(fileSystem);
             FileOptions fileOption = FileOptions.WriteThrough;
 
+            using (var stream = sut.Create(fullPath, data.Length, fileOption))
+            {
+                stream.Write(data, 0, data.Length);
+            }
+
+            var mockFileData = fileSystem.GetFile(fullPath);
+            var fileData = mockFileData.Contents;
+
+            Assert.That(fileData, Is.EqualTo(data));
+        }
+
+        [Test]
+        public void Mockfile_CreateOverload_OverwritesExistingFile()
+        {           
+            
+        }
+
+        [Test]
+        public void Mockfile_CreateOverload_ShouldCreateNewStream()
+        {
+            string fullPath = XFS.Path(@"c:\something\demo.txt");
+            var fileSystem = new MockFileSystem();
+            fileSystem.AddDirectory(XFS.Path(@"c:\something"));            
+            FileOptions fileOption = FileOptions.WriteThrough;
             var mockFile = new MockFile(fileSystem);
-
             Assert.That(fileSystem.FileExists(fullPath), Is.False);
-
-            mockFile.Create(fullPath, 20, fileOption, fileSecurity).Dispose();
-
+            mockFile.Create(fullPath, 20, fileOption).Dispose();
             Assert.That(fileSystem.FileExists(fullPath), Is.True);
         }
+
+        [Test]
+        public void Mockfile_CreateOverload_ShouldThrowArgumentExceptionIfPathIsZeroLength()
+        {
+
+
+
+        }
+
+        [Test]
+        public void Mockfile_CreateOverload_ShouldThrowArgumentExceptionIfPathIsNull()
+        {
+
+        }
+
+        [Test]        
+        public void MockFile_CreateOverload_ShouldThrowDirectoryNotFoundExceptionIfCreatingAndParentPathDoesNotExist()
+        {
+
+        }
+
     }
 }

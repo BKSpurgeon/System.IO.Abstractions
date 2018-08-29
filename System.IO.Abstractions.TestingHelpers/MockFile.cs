@@ -160,13 +160,6 @@ namespace System.IO.Abstractions.TestingHelpers
 
         public override Stream Create(string path, int bufferSize, FileOptions options)
         {
-            throw new NotImplementedException(StringResources.Manager.GetString("NOT_IMPLEMENTED_EXCEPTION"));
-        }
-
-#if NET40
-
-        public override Stream Create(string path, int bufferSize, FileOptions options, FileSecurity fileSecurity)
-        {
             if (path == null)
             {
                 throw new ArgumentNullException(nameof(path), "Path cannot be null.");
@@ -179,11 +172,20 @@ namespace System.IO.Abstractions.TestingHelpers
                 throw new DirectoryNotFoundException(string.Format(CultureInfo.InvariantCulture, StringResources.Manager.GetString("COULD_NOT_FIND_PART_OF_PATH_EXCEPTION"), path));
             }
 
-            MockFileData mockFileData = new MockFileData(new byte[bufferSize]); // should the buffer size be added here?
-            mockFileDataAccessor.AddFile(path, mockFileData);
-            mockFileData.AccessControl = fileSecurity; // TODO:  should we check whether the fileSecurity object has any FileSystem access rules added to it? otherwise it might not make much sense.
+            MockFileData mockFileData = new MockFileData(new byte[bufferSize]);
+            mockFileDataAccessor.AddFile(path, mockFileData);            
+
             var stream = OpenWrite(path);
+
             return stream;
+        }
+
+#if NET40
+
+        public override Stream Create(string path, int bufferSize, FileOptions options, FileSecurity fileSecurity)
+        {
+            throw new NotImplementedException();
+            // mockFileData.AccessControl = fileSecurity;
         }
 
 #endif
